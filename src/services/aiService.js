@@ -136,43 +136,6 @@ export const improveText = async (text) => {
   }
 };
 
-export const formatTextWithAI = async (text, style = 'APA') => {
-  const client = initializeOpenAI();
-  
-  if (!client) {
-    return text;
-  }
-
-  try {
-    const styleGuide = style === 'APA' ? 
-      'APA (American Psychological Association) 7th edition' : 
-      'MLA (Modern Language Association) 9th edition';
-
-    const response = await client.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert academic formatter. Format the provided text according to ${styleGuide} guidelines. Focus on:
-          - Proper paragraph indentation
-          - Correct in-text citation format
-          - Appropriate heading structure
-          - Quote formatting
-          - Reference/bibliography formatting
-          Return ONLY the formatted text, no explanations.`
-        },
-        {
-          role: 'user',
-          content: `Format this text according to ${styleGuide} style:\n\n${text}`
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 1500
-    });
-
-    return response.choices[0].message.content;
-  } catch (error) {
-    console.error('AI Formatting Error:', error);
-    return text;
-  }
-};
+// REMOVED: AI should never directly edit content for formatting
+// This function was allowing AI to rewrite content, which is incorrect
+// Formatting should only change structure, never content

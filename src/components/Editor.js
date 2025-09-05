@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bold, Italic, List, Link, Image, Quote } from 'lucide-react';
 
-function Editor({ chapter, onUpdateChapter, aiSuggestions }) {
+function Editor({ chapter, onUpdateChapter, aiSuggestions, onUpdateSuggestions }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -59,6 +59,21 @@ function Editor({ chapter, onUpdateChapter, aiSuggestions }) {
     }
   };
 
+  const applySuggestion = (suggestion) => {
+    // This is where AI content suggestions would be applied
+    // For now, just show that it's not implemented
+    console.log('Apply suggestion:', suggestion);
+    // In the future, this could apply specific text changes suggested by AI
+    alert('Apply suggestion functionality not yet implemented. This would apply AI-suggested content changes.');
+  };
+
+  const dismissSuggestion = (suggestionId) => {
+    if (onUpdateSuggestions) {
+      const updatedSuggestions = aiSuggestions.filter(s => s.id !== suggestionId);
+      onUpdateSuggestions(updatedSuggestions);
+    }
+  };
+
   if (!chapter) {
     return <div className="editor">No chapter selected</div>;
   }
@@ -111,6 +126,22 @@ function Editor({ chapter, onUpdateChapter, aiSuggestions }) {
               <div key={suggestion.id} className="suggestion-item">
                 <span className="suggestion-type">{suggestion.type}</span>
                 <p>{suggestion.text}</p>
+                {suggestion.type !== 'loading' && suggestion.type !== 'success' && suggestion.type !== 'error' && (
+                  <div className="suggestion-actions">
+                    <button 
+                      className="apply-suggestion-btn"
+                      onClick={() => applySuggestion(suggestion)}
+                    >
+                      Apply
+                    </button>
+                    <button 
+                      className="dismiss-suggestion-btn"
+                      onClick={() => dismissSuggestion(suggestion.id)}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

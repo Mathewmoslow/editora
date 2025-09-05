@@ -1,119 +1,127 @@
 import moment from 'moment';
 
-// Academic formatting service for APA and MLA styles
-export class AcademicFormatter {
+// STRICT Academic formatting service - ONLY changes structure, never content
+export class StrictAcademicFormatter {
   constructor(style = 'APA') {
     this.style = style.toUpperCase();
   }
 
-  // Main formatting function
+  // Main formatting function - PRESERVES all content, only changes structure
   formatDocument(content) {
     let formattedContent = content;
     
-    // Apply basic formatting rules
-    formattedContent = this.formatParagraphs(formattedContent);
-    formattedContent = this.formatHeadings(formattedContent);
-    formattedContent = this.formatCitations(formattedContent);
-    formattedContent = this.formatQuotes(formattedContent);
-    formattedContent = this.formatListsAndBibliography(formattedContent);
+    // ONLY structural changes - no content editing
+    formattedContent = this.formatParagraphStructure(formattedContent);
+    formattedContent = this.formatHeadingStructure(formattedContent);
+    formattedContent = this.formatCitationStructure(formattedContent);
+    formattedContent = this.formatQuoteStructure(formattedContent);
+    formattedContent = this.formatReferencesStructure(formattedContent);
     
     return formattedContent;
   }
 
-  // Format paragraphs according to APA/MLA standards
-  formatParagraphs(content) {
-    let formatted = content;
+  // Format paragraph structure ONLY (indentation, spacing)
+  formatParagraphStructure(content) {
+    // Split into paragraphs, preserve all content
+    const paragraphs = content.split(/\n\s*\n/);
     
-    // Remove extra spaces and normalize line breaks
-    formatted = formatted.replace(/\s+/g, ' ');
-    formatted = formatted.replace(/\n{3,}/g, '\n\n');
-    
-    // Split into paragraphs and format each
-    const paragraphs = formatted.split('\n\n');
     const formattedParagraphs = paragraphs.map(paragraph => {
       if (!paragraph.trim()) return '';
       
-      // Add proper indentation for first line (APA/MLA standard)
-      if (this.style === 'APA') {
-        return '    ' + paragraph.trim(); // 4 spaces or 0.5" indent
-      } else if (this.style === 'MLA') {
-        return '    ' + paragraph.trim(); // 4 spaces or 0.5" indent
-      }
-      return paragraph.trim();
+      // Remove existing indentation and apply standard academic indentation
+      const cleanParagraph = paragraph.replace(/^\s+/gm, '').trim();
+      
+      // Apply proper academic indentation (both APA and MLA use 0.5" first line indent)
+      return '    ' + cleanParagraph; // 4 spaces = 0.5" in most editors
     });
     
+    // Use double line spacing between paragraphs (academic standard)
     return formattedParagraphs.filter(p => p.trim()).join('\n\n');
   }
 
-  // Format headings according to style guide
-  formatHeadings(content) {
+  // Format heading structure ONLY
+  formatHeadingStructure(content) {
     let formatted = content;
     
     if (this.style === 'APA') {
-      // APA heading levels (simplified for plain text)
-      formatted = formatted.replace(/^#\s+(.+)$/gm, '$1'); // Level 1 - Centered, Bold
-      formatted = formatted.replace(/^##\s+(.+)$/gm, '$1'); // Level 2 - Flush Left, Bold
-      formatted = formatted.replace(/^###\s+(.+)$/gm, '    $1'); // Level 3 - Indented, Bold
-    } else if (this.style === 'MLA') {
-      // MLA typically uses minimal headings
-      formatted = formatted.replace(/^#+\s+(.+)$/gm, '$1');
-    }
-    
-    return formatted;
-  }
-
-  // Format in-text citations
-  formatCitations(content) {
-    let formatted = content;
-    
-    if (this.style === 'APA') {
-      // Convert common citation patterns to APA format
-      // (Author, Year) or (Author Year)
-      formatted = formatted.replace(/\((.*?),?\s*(\d{4})\)/g, '($1, $2)');
+      // APA heading levels - only change position/format, not content
+      // Level 1: Centered, Bold, Title Case
+      formatted = formatted.replace(/^#{1}\s+(.+)$/gm, (match, title) => {
+        return `                    ${title}`; // Centered approximation
+      });
       
-      // Direct quotes with page numbers
-      formatted = formatted.replace(/\((.*?),?\s*(\d{4}),?\s*p\.?\s*(\d+)\)/g, '($1, $2, p. $3)');
-      formatted = formatted.replace(/\((.*?),?\s*(\d{4}),?\s*pp\.?\s*(\d+)-(\d+)\)/g, '($1, $2, pp. $3-$4)');
+      // Level 2: Flush Left, Bold, Title Case
+      formatted = formatted.replace(/^#{2}\s+(.+)$/gm, '$1');
+      
+      // Level 3: Flush Left, Bold Italic, Title Case
+      formatted = formatted.replace(/^#{3}\s+(.+)$/gm, '$1');
       
     } else if (this.style === 'MLA') {
-      // MLA format: (Author Page#)
-      formatted = formatted.replace(/\((.*?),?\s*(\d{4}),?\s*p\.?\s*(\d+)\)/g, '($1 $3)');
-      formatted = formatted.replace(/\((.*?),?\s*(\d{4}),?\s*pp\.?\s*(\d+)-(\d+)\)/g, '($1 $3-$4)');
+      // MLA typically doesn't use many headings, keep simple
+      formatted = formatted.replace(/^#{1,6}\s+(.+)$/gm, '$1');
     }
     
     return formatted;
   }
 
-  // Format block quotes
-  formatQuotes(content) {
+  // Format citation structure ONLY - fix spacing and punctuation, preserve content
+  formatCitationStructure(content) {
     let formatted = content;
-    
-    // Format block quotes (40+ words for APA, varies for MLA)
-    const blockQuotePattern = /^>\s*(.+)$/gm;
     
     if (this.style === 'APA') {
-      formatted = formatted.replace(blockQuotePattern, '        $1'); // Double indent for block quotes
+      // Fix APA citation spacing - preserve all author names and dates
+      formatted = formatted.replace(/\(\s*([^)]+?)\s*,\s*(\d{4})\s*\)/g, '($1, $2)');
+      formatted = formatted.replace(/\(\s*([^)]+?)\s*,?\s*(\d{4})\s*,?\s*p\.?\s*(\d+)\s*\)/g, '($1, $2, p. $3)');
+      formatted = formatted.replace(/\(\s*([^)]+?)\s*,?\s*(\d{4})\s*,?\s*pp\.?\s*(\d+)-?(\d+)\s*\)/g, '($1, $2, pp. $3-$4)');
+      
     } else if (this.style === 'MLA') {
-      formatted = formatted.replace(blockQuotePattern, '        $1'); // Indent 1 inch from left margin
+      // Fix MLA citation format - preserve content, fix structure
+      formatted = formatted.replace(/\(\s*([^)]+?)\s*,?\s*(\d{4})?\s*,?\s*p\.?\s*(\d+)\s*\)/g, '($1 $3)');
+      formatted = formatted.replace(/\(\s*([^)]+?)\s*,?\s*(\d{4})?\s*,?\s*pp\.?\s*(\d+)-?(\d+)\s*\)/g, '($1 $3-$4)');
     }
     
     return formatted;
   }
 
-  // Format reference lists and bibliographies
-  formatListsAndBibliography(content) {
+  // Format quote structure ONLY
+  formatQuoteStructure(content) {
     let formatted = content;
     
-    // Find reference/bibliography section
-    const refPattern = /(References|Bibliography|Works Cited)\n([\s\S]*?)(?=\n[A-Z]|\n*$)/gi;
+    // Handle block quotes - only change indentation, preserve content
+    const lines = formatted.split('\n');
+    const formattedLines = lines.map(line => {
+      if (line.trim().startsWith('>')) {
+        // Remove > marker and apply block quote indentation
+        const quoteContent = line.replace(/^\s*>\s*/, '').trim();
+        if (quoteContent) {
+          return '        ' + quoteContent; // Double indent for block quotes
+        }
+      }
+      return line;
+    });
     
-    formatted = formatted.replace(refPattern, (match, heading, refs) => {
-      const formattedRefs = refs.split('\n')
-        .filter(ref => ref.trim())
-        .map(ref => this.formatReference(ref.trim()))
-        .sort() // Alphabetical order
-        .map(ref => ref.startsWith('    ') ? ref : '    ' + ref) // Hanging indent
-        .join('\n');
+    return formattedLines.join('\n');
+  }
+
+  // Format references/bibliography structure ONLY
+  formatReferencesStructure(content) {
+    let formatted = content;
+    
+    // Find reference sections and apply hanging indent
+    const refSectionPattern = /(References|Bibliography|Works Cited)\n([\s\S]*?)(?=\n[A-Z][^a-z]|\n*$)/gi;
+    
+    formatted = formatted.replace(refSectionPattern, (match, heading, refs) => {
+      const refLines = refs.split('\n').filter(line => line.trim());
+      
+      // Apply hanging indent to each reference (preserve content)
+      const formattedRefs = refLines.map(ref => {
+        const cleanRef = ref.trim();
+        if (cleanRef) {
+          // First line flush left, subsequent lines indented (hanging indent)
+          return cleanRef.replace(/^\s+/, ''); // Remove any existing indentation
+        }
+        return ref;
+      }).join('\n        '); // Hanging indent continuation
       
       return `${heading}\n\n${formattedRefs}`;
     });
@@ -121,44 +129,7 @@ export class AcademicFormatter {
     return formatted;
   }
 
-  // Format individual reference/citation
-  formatReference(reference) {
-    if (!reference) return '';
-    
-    if (this.style === 'APA') {
-      return this.formatAPAReference(reference);
-    } else if (this.style === 'MLA') {
-      return this.formatMLAReference(reference);
-    }
-    
-    return reference;
-  }
-
-  formatAPAReference(ref) {
-    // Basic APA formatting patterns
-    // This is a simplified version - real implementation would be more complex
-    
-    // Journal article pattern
-    if (ref.includes('Journal') || ref.includes('Vol') || ref.includes('pp.')) {
-      const parts = ref.split(/[.,]/).map(p => p.trim());
-      // Format: Author, A. A. (Year). Title. Journal Name, Volume(Issue), pages.
-    }
-    
-    // Book pattern
-    if (ref.includes('Publisher') || ref.includes('Press')) {
-      // Format: Author, A. A. (Year). Title. Publisher.
-    }
-    
-    return ref;
-  }
-
-  formatMLAReference(ref) {
-    // Basic MLA formatting patterns
-    // Format: Author. "Title." Journal/Book, Publisher, Date, pages.
-    return ref;
-  }
-
-  // Generate formatted title page
+  // Generate title page structure (separate from content)
   generateTitlePage(title, author, institution, date = new Date()) {
     const formattedDate = moment(date).format('MMMM D, YYYY');
     
@@ -188,60 +159,60 @@ ${formattedDate}
     return `${title}\n\n${author}\n${formattedDate}`;
   }
 
-  // Validate formatting against style guide
-  validateFormatting(content) {
+  // Analyze formatting issues WITHOUT changing content
+  analyzeFormatting(content) {
     const issues = [];
+    const suggestions = [];
     
-    // Check common formatting issues
-    if (content.includes('\t')) {
-      issues.push('Use spaces instead of tabs for indentation');
-    }
-    
-    if (content.match(/\n{4,}/)) {
-      issues.push('Excessive line breaks found');
-    }
-    
-    if (this.style === 'APA') {
-      // Check APA-specific rules
-      if (!content.includes('References') && content.includes('(')) {
-        issues.push('Document appears to have citations but no References section');
+    // Check paragraph structure
+    const paragraphs = content.split(/\n\s*\n/);
+    paragraphs.forEach((paragraph, index) => {
+      if (paragraph.trim() && !paragraph.match(/^\s{4}/)) {
+        issues.push(`Paragraph ${index + 1}: Missing first-line indentation`);
+        suggestions.push(`Add 4-space indentation to paragraph ${index + 1}`);
       }
-      
-      // Check for proper APA citation format
-      const invalidCitations = content.match(/\([^)]*\d{4}[^)]*\)/g);
-      if (invalidCitations) {
-        issues.push('Some citations may not follow APA format');
+    });
+    
+    // Check citation format
+    const citations = content.match(/\([^)]*\d{4}[^)]*\)/g) || [];
+    citations.forEach(citation => {
+      if (this.style === 'APA' && !citation.match(/\([^,]+,\s*\d{4}(\s*,\s*pp?\.\s*\d+(-\d+)?)?\)/)) {
+        issues.push(`Citation format issue: ${citation}`);
+        suggestions.push(`Fix APA citation format: ${citation}`);
       }
+      if (this.style === 'MLA' && !citation.match(/\([^)]+\s+\d+(-\d+)?\)/)) {
+        issues.push(`Citation format issue: ${citation}`);
+        suggestions.push(`Fix MLA citation format: ${citation}`);
+      }
+    });
+    
+    // Check reference section
+    if (content.includes('(') && !content.match(/(References|Bibliography|Works Cited)/i)) {
+      issues.push('Document has citations but no reference section');
+      suggestions.push('Add a References section (APA) or Works Cited section (MLA)');
     }
     
-    if (this.style === 'MLA') {
-      // Check MLA-specific rules
-      if (!content.includes('Works Cited') && content.includes('(')) {
-        issues.push('Document appears to have citations but no Works Cited section');
-      }
-    }
-    
-    return issues;
+    return { issues, suggestions };
   }
 }
 
-// Export convenience functions
-export const formatAPA = (content, options = {}) => {
-  const formatter = new AcademicFormatter('APA');
+// Export strict formatting functions that ONLY change structure
+export const formatAPA = (content) => {
+  const formatter = new StrictAcademicFormatter('APA');
   return formatter.formatDocument(content);
 };
 
-export const formatMLA = (content, options = {}) => {
-  const formatter = new AcademicFormatter('MLA');
+export const formatMLA = (content) => {
+  const formatter = new StrictAcademicFormatter('MLA');
   return formatter.formatDocument(content);
 };
 
-export const validateAcademicFormat = (content, style = 'APA') => {
-  const formatter = new AcademicFormatter(style);
-  return formatter.validateFormatting(content);
+export const analyzeAcademicFormat = (content, style = 'APA') => {
+  const formatter = new StrictAcademicFormatter(style);
+  return formatter.analyzeFormatting(content);
 };
 
 export const generateTitlePage = (title, author, institution, style = 'APA') => {
-  const formatter = new AcademicFormatter(style);
+  const formatter = new StrictAcademicFormatter(style);
   return formatter.generateTitlePage(title, author, institution);
 };

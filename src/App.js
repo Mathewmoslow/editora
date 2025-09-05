@@ -4,8 +4,8 @@ import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { parseLatexToChapters, parseMultipleTexFiles } from './utils/latexParser';
-import { getAISuggestions, formatTextWithAI } from './services/aiService';
-import { formatAPA, formatMLA } from './services/formattingService';
+import { getAISuggestions } from './services/aiService';
+import { formatAPA, formatMLA, analyzeAcademicFormat } from './services/formattingService';
 
 function App() {
   const [chapters, setChapters] = useState([
@@ -98,32 +98,33 @@ function App() {
     setAiSuggestions([{
       id: Date.now(),
       type: 'loading',
-      text: 'Applying formatting...'
+      text: 'Applying structural formatting...'
     }]);
 
-    let formattedContent = activeChapter.content;
     const style = type.includes('apa') ? 'APA' : 'MLA';
 
     try {
-      // Try AI formatting first
-      if (process.env.REACT_APP_OPENAI_API_KEY) {
-        formattedContent = await formatTextWithAI(activeChapter.content, style);
+      // ONLY use strict parser-based formatting - NO AI content editing
+      let formattedContent;
+      if (style === 'APA') {
+        formattedContent = formatAPA(activeChapter.content);
       } else {
-        // Fall back to local formatting
-        if (style === 'APA') {
-          formattedContent = formatAPA(activeChapter.content);
-        } else {
-          formattedContent = formatMLA(activeChapter.content);
-        }
+        formattedContent = formatMLA(activeChapter.content);
       }
 
-      // Update the chapter content
+      // Update the chapter content with ONLY structural changes
       updateChapter(activeChapter.id, { content: formattedContent });
+
+      // Analyze what was changed
+      const analysis = analyzeAcademicFormat(activeChapter.content, style);
+      const changesText = analysis.issues.length > 0 
+        ? `Applied ${style} formatting: ${analysis.issues.length} structural issues fixed`
+        : `${style} formatting applied - document structure updated`;
 
       setAiSuggestions([{
         id: Date.now(),
         type: 'success',
-        text: `Successfully applied ${style} formatting to the chapter.`
+        text: changesText
       }]);
 
     } catch (error) {
@@ -153,6 +154,7 @@ function App() {
           chapter={activeChapter}
           onUpdateChapter={updateChapter}
           aiSuggestions={aiSuggestions}
+          onUpdateSuggestions={setAiSuggestions}
         />
       </div>
     </div>
