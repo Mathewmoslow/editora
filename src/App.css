@@ -118,6 +118,12 @@ body {
   border-radius: 0 0 7px 7px;
 }
 
+.menu-separator {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 5px 0;
+}
+
 /* Main Content Layout */
 .main-content {
   display: flex;

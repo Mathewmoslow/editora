@@ -4,7 +4,8 @@ import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { parseLatexToChapters, parseMultipleTexFiles } from './utils/latexParser';
-import { getAISuggestions } from './services/aiService';
+import { getAISuggestions, formatTextWithAI } from './services/aiService';
+import { formatAPA, formatMLA } from './services/formattingService';
 
 function App() {
   const [chapters, setChapters] = useState([
@@ -71,6 +72,12 @@ function App() {
       return;
     }
 
+    // Handle formatting actions differently
+    if (type.startsWith('apply-')) {
+      await applyFormatting(type);
+      return;
+    }
+
     // Get selected text or use current paragraph
     const selection = window.getSelection().toString();
     const textToAnalyze = selection || activeChapter.content.slice(0, 500);
@@ -83,6 +90,49 @@ function App() {
 
     const suggestions = await getAISuggestions(textToAnalyze, type);
     setAiSuggestions(suggestions);
+  };
+
+  const applyFormatting = async (type) => {
+    if (!activeChapter || !activeChapter.content) return;
+
+    setAiSuggestions([{
+      id: Date.now(),
+      type: 'loading',
+      text: 'Applying formatting...'
+    }]);
+
+    let formattedContent = activeChapter.content;
+    const style = type.includes('apa') ? 'APA' : 'MLA';
+
+    try {
+      // Try AI formatting first
+      if (process.env.REACT_APP_OPENAI_API_KEY) {
+        formattedContent = await formatTextWithAI(activeChapter.content, style);
+      } else {
+        // Fall back to local formatting
+        if (style === 'APA') {
+          formattedContent = formatAPA(activeChapter.content);
+        } else {
+          formattedContent = formatMLA(activeChapter.content);
+        }
+      }
+
+      // Update the chapter content
+      updateChapter(activeChapter.id, { content: formattedContent });
+
+      setAiSuggestions([{
+        id: Date.now(),
+        type: 'success',
+        text: `Successfully applied ${style} formatting to the chapter.`
+      }]);
+
+    } catch (error) {
+      setAiSuggestions([{
+        id: Date.now(),
+        type: 'error',
+        text: `Error applying formatting: ${error.message}`
+      }]);
+    }
   };
 
   return (

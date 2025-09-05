@@ -48,6 +48,15 @@ export const getAISuggestions = async (content, type = 'general') => {
       case 'rephrase':
         prompt = `Provide 2 alternative ways to express this idea:\n\n"${content}"`;
         break;
+      case 'format-apa':
+        prompt = `Review this text for APA formatting compliance. Check for:\n1. Proper in-text citations (Author, Year)\n2. Paragraph structure and indentation\n3. Reference formatting\n4. Heading levels\n\nText: "${content}"\n\nProvide specific formatting corrections needed.`;
+        break;
+      case 'format-mla':
+        prompt = `Review this text for MLA formatting compliance. Check for:\n1. Proper in-text citations (Author Page)\n2. Paragraph structure\n3. Works Cited formatting\n4. Quote integration\n\nText: "${content}"\n\nProvide specific formatting corrections needed.`;
+        break;
+      case 'citations':
+        prompt = `Help improve the citations in this text. Identify:\n1. Missing citations\n2. Improperly formatted citations\n3. Sources that need page numbers\n\nText: "${content}"\n\nProvide citation improvement suggestions.`;
+        break;
       default:
         prompt = `Provide helpful writing suggestions for this text:\n\n"${content}"`;
     }
@@ -123,6 +132,47 @@ export const improveText = async (text) => {
     return response.choices[0].message.content;
   } catch (error) {
     console.error('AI Improvement Error:', error);
+    return text;
+  }
+};
+
+export const formatTextWithAI = async (text, style = 'APA') => {
+  const client = initializeOpenAI();
+  
+  if (!client) {
+    return text;
+  }
+
+  try {
+    const styleGuide = style === 'APA' ? 
+      'APA (American Psychological Association) 7th edition' : 
+      'MLA (Modern Language Association) 9th edition';
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert academic formatter. Format the provided text according to ${styleGuide} guidelines. Focus on:
+          - Proper paragraph indentation
+          - Correct in-text citation format
+          - Appropriate heading structure
+          - Quote formatting
+          - Reference/bibliography formatting
+          Return ONLY the formatted text, no explanations.`
+        },
+        {
+          role: 'user',
+          content: `Format this text according to ${styleGuide} style:\n\n${text}`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 1500
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('AI Formatting Error:', error);
     return text;
   }
 };
