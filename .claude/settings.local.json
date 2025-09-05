@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Read(//Users/mathewmoslow/Screenshots/**)",
+      "Bash(kill:*)",
+      "Bash(cd:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
