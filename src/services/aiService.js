@@ -1,18 +1,34 @@
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-// You'll need to set REACT_APP_OPENAI_API_KEY in your .env.local file
-const openai = new OpenAI({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Only for development - in production, use a backend server
-});
+// Initialize OpenAI client only if API key is available
+let openai = null;
+
+const initializeOpenAI = () => {
+  // Use REACT_APP_OPENAI_API_KEY which will be set by the build script
+  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  
+  if (!openai && apiKey) {
+    try {
+      openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true // Only for development - in production, use a backend server
+      });
+    } catch (error) {
+      console.log('OpenAI initialization skipped - no API key provided');
+      openai = null;
+    }
+  }
+  return openai;
+};
 
 export const getAISuggestions = async (content, type = 'general') => {
-  if (!process.env.REACT_APP_OPENAI_API_KEY) {
+  const client = initializeOpenAI();
+  
+  if (!client) {
     return [{
       id: Date.now(),
-      type: 'error',
-      text: 'Please add your OpenAI API key to use AI features. Create a .env.local file with REACT_APP_OPENAI_API_KEY=your-key-here'
+      type: 'info',
+      text: 'AI features are not configured. To enable AI suggestions, add your OpenAI API key to the .env.local file: OPENAI_API_KEY=your-key-here or REACT_APP_OPENAI_API_KEY=your-key-here'
     }];
   }
 
@@ -36,7 +52,7 @@ export const getAISuggestions = async (content, type = 'general') => {
         prompt = `Provide helpful writing suggestions for this text:\n\n"${content}"`;
     }
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
@@ -81,12 +97,14 @@ export const getAISuggestions = async (content, type = 'general') => {
 };
 
 export const improveText = async (text) => {
-  if (!process.env.REACT_APP_OPENAI_API_KEY) {
+  const client = initializeOpenAI();
+  
+  if (!client) {
     return text;
   }
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {

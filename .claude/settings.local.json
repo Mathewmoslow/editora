@@ -7,7 +7,11 @@
       "Bash(npm install:*)",
       "Read(//Users/mathewmoslow/Screenshots/**)",
       "Bash(kill:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git commit -m \"Complete Editoria AI Book Editor with LaTeX import and AI assistance\n\n- Added chapter management system\n- Implemented LaTeX file import (.tex)\n- Added AI-powered writing assistance with OpenAI integration\n- Created editor with formatting tools\n- Fixed chapter selection issues\n- Added sidebar for chapter navigation\n- Styled with modern macOS-inspired design\")",
+      "Bash(git push origin main)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
