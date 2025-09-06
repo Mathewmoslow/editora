@@ -65,32 +65,55 @@ const cleanLatexToPlainText = (text) => {
     .replace(/``/g, '"')
     .replace(/''/g, '"')
     .replace(/`/g, "'")
-    // Handle paragraphs
+    // ENHANCED paragraph handling for LaTeX - preserve natural structure
     .replace(/\\par\s+/g, '\n\n')
-    // Handle line breaks
+    .replace(/\\paragraph\{[^}]*\}/g, '\n\n')
+    // Detect natural paragraph patterns in LaTeX source
+    .replace(/\.\s*\n\s*[A-Z]/g, (match) => {
+      // Sentence ending followed by new sentence = likely paragraph break
+      return match.replace(/\n/, '\n\n');
+    })
+    // Look for natural transition indicators in any writing style
+    .replace(/\.\s+(However|Therefore|Furthermore|Moreover|Additionally|In contrast|Meanwhile|Subsequently|Consequently|Nevertheless|Then|Next|Later|Finally|Suddenly|But|And then|After that|Soon|Eventually|At that moment)\s+/g, '.\n\n$1 ')
+    // Detect dialogue changes (common in fiction/memoir)
+    .replace(/\"\s+\"[A-Z]/g, (match) => match.replace(/\"\s+\"/, '"\n\n"'))
+    // Detect scene/time transitions
+    .replace(/\.\s+(The next day|The following morning|Years later|Hours passed|Meanwhile|Back at|Elsewhere|At the same time)\s+/g, '.\n\n$1 ')
+    .replace(/\n\s*\n/g, '\n\n') // Preserve existing paragraph breaks
+    // Handle line breaks that aren't paragraph breaks
     .replace(/\\\\/g, '\n')
     .replace(/\\newline/g, '\n')
-    // Remove labels and refs
+    // Remove LaTeX references but preserve structure
     .replace(/\\label\{[^}]+\}/g, '')
-    .replace(/\\ref\{[^}]+\}/g, '')
-    .replace(/\\cite\{[^}]+\}/g, '')
-    // Handle lists
-    .replace(/\\begin\{itemize\}/g, '')
-    .replace(/\\end\{itemize\}/g, '')
-    .replace(/\\begin\{enumerate\}/g, '')
-    .replace(/\\end\{enumerate\}/g, '')
-    .replace(/\\item\s+/g, '• ')
+    .replace(/\\ref\{[^}]+\}/g, '[REF]')
+    .replace(/\\cite\{[^}]+\}/g, '[CITE]')
+    // Handle lists with proper spacing
+    .replace(/\\begin\{itemize\}/g, '\n\n')
+    .replace(/\\end\{itemize\}/g, '\n\n')
+    .replace(/\\begin\{enumerate\}/g, '\n\n')
+    .replace(/\\end\{enumerate\}/g, '\n\n')
+    .replace(/\\item\s+/g, '\n• ')
     // Handle footnotes
     .replace(/\\footnote\{([^}]+)\}/g, ' ($1)')
-    // Remove other common commands
+    // Remove LaTeX commands but preserve content structure
     .replace(/\\[a-zA-Z]+\*?\{/g, '{')
     .replace(/\\[a-zA-Z]+\*?\s+/g, ' ')
-    // Clean up multiple spaces and newlines
-    .replace(/\s+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    
+  // SMARTER paragraph detection - identify blocks needing writer-style breaks
+  cleaned = cleaned
+    .replace(/\s*\n\s*/g, '\n') // Clean line breaks
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+    
+  // If text has very few paragraph breaks, suggest it needs AI paragraph analysis
+  const paragraphCount = (cleaned.match(/\n\n/g) || []).length;
+  const wordCount = cleaned.split(/\s+/).length;
   
-  return cleaned;
+  if (paragraphCount < 2 && wordCount > 200) {
+    // Mark this content as needing paragraph break suggestions
+    cleaned = `[NEEDS_PARAGRAPH_ANALYSIS]\n${cleaned}`;
+  }
+  
+  return cleaned.trim();
 };
 
 export const parseMultipleTexFiles = (files) => {

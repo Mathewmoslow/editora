@@ -136,6 +136,97 @@ export const improveText = async (text) => {
   }
 };
 
-// REMOVED: AI should never directly edit content for formatting
-// This function was allowing AI to rewrite content, which is incorrect
-// Formatting should only change structure, never content
+export const suggestParagraphBreaks = async (text) => {
+  const client = initializeOpenAI();
+  
+  if (!client) {
+    return { 
+      suggestions: [], 
+      message: 'AI paragraph analysis not available - API key not configured' 
+    };
+  }
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional editor analyzing paragraph structure for ANY type of writing. Break up large text blocks into well-structured paragraphs as a skilled writer would organize them.
+
+          CRITICAL RULES:
+          1. NEVER change, rewrite, or modify any words
+          2. ONLY suggest where to INSERT paragraph breaks (\\n\\n)
+          3. Adapt to the writing style (fiction, memoir, business, academic, etc.)
+          4. Look for natural flow breaks and reader comprehension points
+          5. Typical paragraphs: 2-6 sentences, but adapt to content type
+          6. Each paragraph should have a clear focus or purpose
+
+          For ANY writing type, analyze for these break points:
+          - Topic shifts or new ideas introduced
+          - Scene changes or time shifts (fiction/memoir)
+          - Dialogue transitions (new speaker)
+          - Emotional or mood changes  
+          - Cause and effect relationships
+          - Examples or illustrations following explanations
+          - Contrasting ideas or perspectives
+          - Action sequences vs. description
+          - Problem/solution transitions
+          - Character or perspective changes
+          - Temporal sequences (then, next, meanwhile)
+
+          Return ONLY a JSON object:
+          {
+            "breaks": [
+              {"position": 123, "reason": "Scene shifts to new location"},
+              {"position": 456, "reason": "New character introduced"},
+              {"position": 789, "reason": "Topic changes from X to Y"}
+            ]
+          }
+          Position = exact character index where \\n\\n should be inserted.`
+        },
+        {
+          role: 'user',
+          content: `Break this text into natural paragraphs. Adapt your analysis to the writing style and content type:\n\n${text.slice(0, 2000)}`
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 500
+    });
+
+    try {
+      const result = JSON.parse(response.choices[0].message.content);
+      return {
+        suggestions: result.breaks || [],
+        message: `Found ${result.breaks?.length || 0} potential paragraph break points`
+      };
+    } catch (parseError) {
+      return {
+        suggestions: [],
+        message: 'Could not parse paragraph suggestions'
+      };
+    }
+
+  } catch (error) {
+    console.error('Paragraph Analysis Error:', error);
+    return {
+      suggestions: [],
+      message: 'Error analyzing paragraph structure'
+    };
+  }
+};
+
+export const applyParagraphBreaks = (text, breaks) => {
+  // Sort breaks by position (descending) so we don't mess up positions when inserting
+  const sortedBreaks = breaks.sort((a, b) => b.position - a.position);
+  
+  let newText = text;
+  sortedBreaks.forEach(breakPoint => {
+    if (breakPoint.position > 0 && breakPoint.position < newText.length) {
+      // Insert paragraph break (double newline) at specified position
+      newText = newText.slice(0, breakPoint.position) + '\n\n' + newText.slice(breakPoint.position);
+    }
+  });
+  
+  return newText;
+};

@@ -3,8 +3,8 @@ import './App.css';
 import Editor from './components/Editor';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { parseLatexToChapters, parseMultipleTexFiles } from './utils/latexParser';
-import { getAISuggestions } from './services/aiService';
+import { parseMultipleTexFiles } from './utils/latexParser';
+import { getAISuggestions, suggestParagraphBreaks } from './services/aiService';
 import { formatAPA, formatMLA, analyzeAcademicFormat } from './services/formattingService';
 
 function App() {
@@ -59,6 +59,21 @@ function App() {
       // Replace existing chapters with imported ones
       setChapters(importedChapters);
       setActiveChapterId(importedChapters[0].id);
+      
+      // Check if any chapters need paragraph analysis
+      const needsParagraphAnalysis = importedChapters.some(ch => 
+        ch.content.startsWith('[NEEDS_PARAGRAPH_ANALYSIS]')
+      );
+      
+      if (needsParagraphAnalysis) {
+        setTimeout(() => {
+          setAiSuggestions([{
+            id: Date.now(),
+            type: 'info',
+            text: 'Imported text appears to have few paragraph breaks. Consider using "AI Assist → Suggest Paragraph Breaks" to improve readability.'
+          }]);
+        }, 1000);
+      }
     }
   };
 
@@ -78,6 +93,12 @@ function App() {
       return;
     }
 
+    // Handle paragraph break suggestions
+    if (type === 'paragraph-breaks') {
+      await handleParagraphBreakSuggestions();
+      return;
+    }
+
     // Get selected text or use current paragraph
     const selection = window.getSelection().toString();
     const textToAnalyze = selection || activeChapter.content.slice(0, 500);
@@ -90,6 +111,42 @@ function App() {
 
     const suggestions = await getAISuggestions(textToAnalyze, type);
     setAiSuggestions(suggestions);
+  };
+
+  const handleParagraphBreakSuggestions = async () => {
+    setAiSuggestions([{
+      id: Date.now(),
+      type: 'loading',
+      text: 'Analyzing paragraph structure...'
+    }]);
+
+    let content = activeChapter.content;
+    
+    // Remove the analysis marker if it exists
+    if (content.startsWith('[NEEDS_PARAGRAPH_ANALYSIS]\n')) {
+      content = content.replace('[NEEDS_PARAGRAPH_ANALYSIS]\n', '');
+    }
+
+    const result = await suggestParagraphBreaks(content);
+    
+    if (result.suggestions.length > 0) {
+      // Create actionable suggestions for paragraph breaks
+      const suggestions = result.suggestions.map((breakPoint, index) => ({
+        id: Date.now() + index,
+        type: 'paragraph-break',
+        text: `Insert paragraph break: ${breakPoint.reason}`,
+        action: 'paragraph-break',
+        data: { position: breakPoint.position, reason: breakPoint.reason }
+      }));
+
+      setAiSuggestions(suggestions);
+    } else {
+      setAiSuggestions([{
+        id: Date.now(),
+        type: 'info',
+        text: result.message || 'No paragraph break suggestions found.'
+      }]);
+    }
   };
 
   const applyFormatting = async (type) => {

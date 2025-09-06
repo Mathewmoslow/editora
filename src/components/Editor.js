@@ -60,11 +60,40 @@ function Editor({ chapter, onUpdateChapter, aiSuggestions, onUpdateSuggestions }
   };
 
   const applySuggestion = (suggestion) => {
-    // This is where AI content suggestions would be applied
-    // For now, just show that it's not implemented
-    console.log('Apply suggestion:', suggestion);
-    // In the future, this could apply specific text changes suggested by AI
-    alert('Apply suggestion functionality not yet implemented. This would apply AI-suggested content changes.');
+    if (!chapter) return;
+
+    if (suggestion.action === 'paragraph-break') {
+      // Apply paragraph break at specified position
+      const currentContent = content;
+      let cleanContent = currentContent;
+      
+      // Remove analysis marker if present
+      if (cleanContent.startsWith('[NEEDS_PARAGRAPH_ANALYSIS]\n')) {
+        cleanContent = cleanContent.replace('[NEEDS_PARAGRAPH_ANALYSIS]\n', '');
+      }
+
+      // Apply the paragraph break
+      const position = suggestion.data.position;
+      if (position > 0 && position < cleanContent.length) {
+        const newContent = cleanContent.slice(0, position) + '\n\n' + cleanContent.slice(position);
+        setContent(newContent);
+        if (chapter) {
+          onUpdateChapter(chapter.id, { content: newContent });
+        }
+        
+        // Remove this suggestion from the list
+        dismissSuggestion(suggestion.id);
+        
+        // Show success message
+        alert(`Paragraph break applied: ${suggestion.data.reason}`);
+      } else {
+        alert('Could not apply paragraph break - invalid position');
+      }
+    } else {
+      // For other types of suggestions, show not implemented
+      console.log('Apply suggestion:', suggestion);
+      alert('This type of suggestion application is not yet implemented. Only paragraph breaks are currently supported.');
+    }
   };
 
   const dismissSuggestion = (suggestionId) => {

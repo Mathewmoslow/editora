@@ -58,6 +58,7 @@ function Header({ onAIAssist, onImport }) {
               <button onClick={() => handleAIClick('continue')}>Continue Writing</button>
               <button onClick={() => handleAIClick('rephrase')}>Rephrase</button>
               <div className="menu-separator"></div>
+              <button onClick={() => handleAIClick('paragraph-breaks')}>Suggest Paragraph Breaks</button>
               <button onClick={() => handleAIClick('format-apa')}>Format APA Style</button>
               <button onClick={() => handleAIClick('format-mla')}>Format MLA Style</button>
               <button onClick={() => handleAIClick('citations')}>Check Citations</button>
